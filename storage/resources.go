@@ -1,9 +1,18 @@
+/*
+ * Copyright (c) 2020 Miguel Ángel Ortuño.
+ * See the LICENSE file for more information.
+ */
+
 package storage
 
-import "github.com/ortuman/jackal/model"
+import (
+	"context"
+
+	"github.com/ortuman/jackal/model"
+)
 
 type Resources interface {
-	UpsertResource(resource *model.Resource, allocationID string) error
+	UpsertResource(ctx context.Context, resource *model.Resource, allocationID string) error
 
-	FetchResources(username, domain string) ([]model.Resource, error)
+	FetchResources(ctx context.Context, username, domain string) ([]model.Resource, error)
 }

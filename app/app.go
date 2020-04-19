@@ -177,7 +177,7 @@ func (a *Application) Run() error {
 		a.s2sOutProvider = s2s.NewOutProvider(cfg.S2S, hosts)
 		s2sRouter = s2srouter.New(a.s2sOutProvider)
 	}
-	c2sRouter, err := c2srouter.New(a.storage.User, a.storage.BlockList, a.storage.Presences, a.cluster)
+	c2sRouter, err := c2srouter.New(a.storage.User, a.storage.Resources, a.storage.BlockList, a.storage.Allocation, a.cluster)
 	if err != nil {
 		return err
 	}

@@ -9,6 +9,8 @@ import (
 	"context"
 	"sync"
 
+	"github.com/ortuman/jackal/xmpp/jid"
+
 	"github.com/ortuman/jackal/router"
 	"github.com/ortuman/jackal/stream"
 	"github.com/ortuman/jackal/xmpp"
@@ -69,8 +71,7 @@ func (r *resources) unbind(res string) {
 	}
 }
 
-func (r *resources) route(ctx context.Context, stanza xmpp.Stanza) error {
-	toJID := stanza.ToJID()
+func (r *resources) route(ctx context.Context, stanza xmpp.Stanza, toJID *jid.JID) error {
 	if toJID.IsFullWithUser() {
 		return r.routeToResource(ctx, stanza, toJID.Resource())
 	}

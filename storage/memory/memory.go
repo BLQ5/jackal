@@ -12,27 +12,31 @@ import (
 )
 
 type Storage struct {
-	User      *User
-	Roster    *Roster
-	Presences *Presences
-	VCard     *VCard
-	Private   *Private
-	BlockList *BlockList
-	PubSub    *PubSub
-	Offline   *Offline
+	Allocation *Allocation
+	User       *User
+	Resources  *Resources
+	Roster     *Roster
+	Presences  *Presences
+	VCard      *VCard
+	Private    *Private
+	BlockList  *BlockList
+	PubSub     *PubSub
+	Offline    *Offline
 }
 
 // New initializes in-memory storage and returns associated container.
 func New() (*Storage, error) {
 	return &Storage{
-		User:      NewUser(),
-		Roster:    NewRoster(),
-		Presences: NewPresences(),
-		VCard:     NewVCard(),
-		Private:   NewPrivate(),
-		BlockList: NewBlockList(),
-		PubSub:    NewPubSub(),
-		Offline:   NewOffline(),
+		Allocation: NewAllocation(),
+		User:       NewUser(),
+		Resources:  NewResources(),
+		Presences:  NewPresences(),
+		Roster:     NewRoster(),
+		VCard:      NewVCard(),
+		Private:    NewPrivate(),
+		BlockList:  NewBlockList(),
+		PubSub:     NewPubSub(),
+		Offline:    NewOffline(),
 	}, nil
 }
 

@@ -9,6 +9,8 @@ import (
 	"context"
 	"sync"
 
+	"github.com/ortuman/jackal/xmpp/jid"
+
 	"github.com/ortuman/jackal/router"
 	"github.com/ortuman/jackal/stream"
 	"github.com/ortuman/jackal/xmpp"
@@ -25,14 +27,13 @@ func newLocalRouter() *localRouter {
 	}
 }
 
-func (l *localRouter) route(ctx context.Context, stanza xmpp.Stanza) error {
-	toJID := stanza.ToJID()
+func (l *localRouter) route(ctx context.Context, stanza xmpp.Stanza, toJID *jid.JID) error {
 	l.mu.RLock()
 	rs := l.tbl[toJID.Node()]
 	l.mu.RUnlock()
 
 	if rs != nil {
-		return rs.route(ctx, stanza)
+		return rs.route(ctx, stanza, toJID)
 	}
 	return router.ErrNotAuthenticated
 }

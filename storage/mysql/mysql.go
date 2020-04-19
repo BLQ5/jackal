@@ -16,7 +16,9 @@ import (
 )
 
 type Storage struct {
+	*Allocation
 	*User
+	*Resources
 	*Roster
 	*Presences
 	*VCard
@@ -49,16 +51,18 @@ func New(cfg *Config) (*Storage, error) {
 		return nil, err
 	}
 	c := &Storage{
-		User:      newUser(h),
-		Roster:    newRoster(h),
-		Presences: newPresences(h),
-		VCard:     newVCard(h),
-		Private:   newPrivate(h),
-		BlockList: newBlockList(h),
-		PubSub:    newPubSub(h),
-		Offline:   newOffline(h),
-		h:         h,
-		doneCh:    make(chan chan bool, 1),
+		Allocation: newAllocation(h),
+		User:       newUser(h),
+		Resources:  newResources(h),
+		Roster:     newRoster(h),
+		Presences:  newPresences(h),
+		VCard:      newVCard(h),
+		Private:    newPrivate(h),
+		BlockList:  newBlockList(h),
+		PubSub:     newPubSub(h),
+		Offline:    newOffline(h),
+		h:          h,
+		doneCh:     make(chan chan bool, 1),
 	}
 	go c.loop()
 

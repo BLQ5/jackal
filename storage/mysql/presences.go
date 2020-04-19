@@ -11,9 +11,8 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/ortuman/jackal/model"
-
 	sq "github.com/Masterminds/squirrel"
+	"github.com/ortuman/jackal/model"
 	capsmodel "github.com/ortuman/jackal/model/capabilities"
 	"github.com/ortuman/jackal/util/pool"
 	"github.com/ortuman/jackal/xmpp"

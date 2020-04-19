@@ -15,9 +15,11 @@ import (
 )
 
 type Storage struct {
+	Allocation
 	User
-	Roster
+	Resources
 	Presences
+	Roster
 	VCard
 	Private
 	BlockList

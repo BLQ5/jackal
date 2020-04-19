@@ -9,6 +9,7 @@ import (
 	"context"
 	"sort"
 	"sync"
+	"time"
 
 	"github.com/ortuman/jackal/cluster"
 	"github.com/ortuman/jackal/log"
@@ -23,29 +24,47 @@ import (
 type c2sRouter struct {
 	userSt        storage.User
 	blockListSt   storage.BlockList
-	presencesSt   storage.Presences
+	resourcesSt   storage.Resources
 	cluster       *cluster.Cluster
 	localRouter   *localRouter
 	clusterRouter *clusterRouter
+	allocationSt  storage.Allocation
+	closeCh       chan chan struct{}
 }
 
-func New(userSt storage.User, blockListSt storage.BlockList, presencesSt storage.Presences, cluster *cluster.Cluster) (router.C2SRouter, error) {
+func New(
+	userSt storage.User,
+	resourcesSt storage.Resources,
+	blockListSt storage.BlockList,
+	allocationSt storage.Allocation,
+	cluster *cluster.Cluster,
+) (router.C2SRouter, error) {
 	r := &c2sRouter{
-		userSt:      userSt,
-		blockListSt: blockListSt,
-		presencesSt: presencesSt,
-		localRouter: newLocalRouter(),
+		userSt:       userSt,
+		blockListSt:  blockListSt,
+		resourcesSt:  resourcesSt,
+		localRouter:  newLocalRouter(),
+		cluster:      cluster,
+		allocationSt: allocationSt,
+		closeCh:      make(chan chan struct{}, 1),
 	}
 	if cluster != nil {
-		clusterRouter, err := newClusterRouter(cluster, presencesSt)
+		clusterRouter, err := newClusterRouter(cluster.MemberList)
 		if err != nil {
 			return nil, err
 		}
-		r.cluster = cluster
 		r.clusterRouter = clusterRouter
 
 		// register local router as cluster stanza handler
 		cluster.RegisterStanzaHandler(r.localRouter.route)
+
+		if err := r.cluster.Elect(); err != nil {
+			return nil, err
+		}
+		if err := r.cluster.Join(); err != nil {
+			return nil, err
+		}
+		go r.loop()
 	}
 	return r, nil
 }
@@ -70,15 +89,15 @@ func (r *c2sRouter) Route(ctx context.Context, stanza xmpp.Stanza, validations r
 			return router.ErrBlockedJID
 		}
 	}
-	// fetch user extended presences
-	extPresences, err := r.presencesSt.FetchPresencesMatchingJID(ctx, stanza.ToJID().ToBareJID())
+	// fetch available resources
+	resources, err := r.resourcesSt.FetchResources(ctx, toJID.Node(), toJID.Domain())
 	if err != nil {
 		return err
 	}
-	if len(extPresences) == 0 {
+	if len(resources) == 0 {
 		return router.ErrNotAuthenticated
 	}
-	return r.route(ctx, stanza, extPresences)
+	return r.route(ctx, stanza, resources)
 }
 
 func (r *c2sRouter) Bind(stm stream.C2S) {
@@ -101,14 +120,14 @@ func (r *c2sRouter) Streams(username string) []stream.C2S {
 	return r.localRouter.streams(username)
 }
 
-func (r *c2sRouter) route(ctx context.Context, stanza xmpp.Stanza, extPresences []model.ExtPresence) error {
+func (r *c2sRouter) route(ctx context.Context, stanza xmpp.Stanza, resources []model.Resource) error {
 	toJID := stanza.ToJID()
 	if toJID.IsFullWithUser() {
-		return r.routeToResource(ctx, stanza, extPresences)
+		return r.routeToFullResource(ctx, stanza, resources)
 	}
 	switch msg := stanza.(type) {
 	case *xmpp.Message:
-		routed, err := r.routeToPrioritaryResources(ctx, msg, extPresences)
+		routed, err := r.routeToPrioritaryResources(ctx, msg, resources)
 		if err != nil {
 			return err
 		}
@@ -118,58 +137,59 @@ func (r *c2sRouter) route(ctx context.Context, stanza xmpp.Stanza, extPresences 
 		return nil
 	}
 route2all:
-	return r.routeToAllResources(ctx, stanza, extPresences)
+	return r.routeToAllResources(ctx, stanza, resources)
 }
 
-func (r *c2sRouter) routeToResource(ctx context.Context, stanza xmpp.Stanza, extPresences []model.ExtPresence) error {
-	for _, extPresence := range extPresences {
-		if stanza.ToJID().Resource() != extPresence.Presence.FromJID().Resource() {
+func (r *c2sRouter) routeToFullResource(ctx context.Context, stanza xmpp.Stanza, resources []model.Resource) error {
+	toJID := stanza.ToJID()
+	for _, res := range resources {
+		if stanza.ToJID().Resource() != res.JID.Resource() {
 			continue
 		}
-		return r.routeToAllocation(ctx, stanza, extPresence.AllocationID)
+		return r.routeToAllocation(ctx, stanza, []*jid.JID{toJID}, res.AllocationID)
 	}
 	return router.ErrResourceNotFound
 }
 
-func (r *c2sRouter) routeToPrioritaryResources(ctx context.Context, stanza xmpp.Stanza, extPresences []model.ExtPresence) (routed bool, err error) {
-	sort.Slice(extPresences, func(i, j int) bool {
-		return extPresences[i].Presence.Priority() > extPresences[j].Presence.Priority()
+func (r *c2sRouter) routeToPrioritaryResources(ctx context.Context, stanza xmpp.Stanza, resources []model.Resource) (routed bool, err error) {
+	sort.Slice(resources, func(i, j int) bool {
+		return resources[i].Priority > resources[j].Priority
 	})
-	highestPriority := extPresences[0].Presence.Priority()
-	if highestPriority == 0 {
+	highestPriority := resources[0].Priority
+	if highestPriority <= 0 {
 		return false, nil // no prioritary presence found
 	}
-	var prioritaryPresences []model.ExtPresence
-	for _, extPresence := range extPresences {
-		if extPresence.Presence.Priority() != highestPriority {
+	var prioritaryResources []model.Resource
+	for _, res := range resources {
+		if res.Priority != highestPriority {
 			break
 		}
-		prioritaryPresences = append(prioritaryPresences, extPresence)
+		prioritaryResources = append(prioritaryResources, res)
 	}
 	// broacast to prioritary resources
-	if err := r.routeToAllResources(ctx, stanza, prioritaryPresences); err != nil {
+	if err := r.routeToAllResources(ctx, stanza, prioritaryResources); err != nil {
 		return false, err
 	}
 	return true, nil
 }
 
-func (r *c2sRouter) routeToAllResources(ctx context.Context, stanza xmpp.Stanza, extPresences []model.ExtPresence) error {
-	allocationIDs := make(map[string]struct{})
-	for _, extPresence := range extPresences {
-		allocationIDs[extPresence.AllocationID] = struct{}{}
+func (r *c2sRouter) routeToAllResources(ctx context.Context, stanza xmpp.Stanza, resources []model.Resource) error {
+	routeTbl := make(map[string][]*jid.JID)
+	for _, res := range resources {
+		routeTbl[res.AllocationID] = append(routeTbl[res.AllocationID], res.JID)
 	}
-	errCh := make(chan error, len(allocationIDs))
+	errCh := make(chan error, len(routeTbl))
 
 	var wg sync.WaitGroup
-	for allocID := range allocationIDs {
+	for k, v := range routeTbl {
 		wg.Add(1)
 
-		go func(allocationID string) {
+		go func(allocationID string, toJIDs []*jid.JID) {
 			defer wg.Done()
-			if err := r.routeToAllocation(ctx, stanza, allocationID); err != nil {
+			if err := r.routeToAllocation(ctx, stanza, toJIDs, allocationID); err != nil {
 				errCh <- err
 			}
-		}(allocID)
+		}(k, v)
 	}
 	go func() {
 		wg.Wait()
@@ -178,11 +198,13 @@ func (r *c2sRouter) routeToAllResources(ctx context.Context, stanza xmpp.Stanza,
 	return <-errCh
 }
 
-func (r *c2sRouter) routeToAllocation(ctx context.Context, stanza xmpp.Stanza, allocID string) error {
+func (r *c2sRouter) routeToAllocation(ctx context.Context, stanza xmpp.Stanza, toJIDs []*jid.JID, allocID string) error {
 	if r.clusterRouter == nil || r.cluster.IsLocalAllocationID(allocID) {
-		return r.localRouter.route(ctx, stanza)
+		for _, toJID := range toJIDs {
+			return r.localRouter.route(ctx, stanza, toJID)
+		}
 	}
-	return r.clusterRouter.route(ctx, stanza, allocID)
+	return r.clusterRouter.route(ctx, stanza, toJIDs, allocID)
 }
 
 func (r *c2sRouter) isBlockedJID(ctx context.Context, j *jid.JID, username string) bool {
@@ -205,4 +227,56 @@ func (r *c2sRouter) isBlockedJID(ctx context.Context, j *jid.JID, username strin
 		}
 	}
 	return false
+}
+
+func (r *c2sRouter) shutdown(ctx context.Context) error {
+	ch := make(chan struct{})
+	r.closeCh <- ch
+	select {
+	case <-ch:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+}
+
+func (r *c2sRouter) loop() {
+	tc := time.NewTicker(houseKeepingInterval)
+	defer tc.Stop()
+
+	for {
+		select {
+		case <-tc.C:
+			if err := r.houseKeeping(); err != nil {
+				log.Warnf("housekeeping task error: %v", err)
+			}
+		case ch := <-r.closeCh:
+			close(ch)
+			return
+		}
+	}
+}
+
+func (r *c2sRouter) houseKeeping() error {
+	if !r.cluster.IsLeader() {
+		return nil
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), (houseKeepingInterval*5)/10)
+	defer cancel()
+
+	allocIDs, err := r.allocationSt.FetchAllocations(ctx)
+	if err != nil {
+		return err
+	}
+	members := r.cluster.Members()
+	for _, allocID := range allocIDs {
+		if m := members.Member(allocID); m != nil {
+			continue
+		}
+		// unregister inactive allocations
+		if err := r.allocationSt.UnregisterAllocation(ctx, allocID); err != nil {
+			return err
+		}
+	}
+	return nil
 }

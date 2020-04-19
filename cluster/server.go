@@ -11,6 +11,8 @@ import (
 	"strconv"
 	"sync/atomic"
 
+	"github.com/ortuman/jackal/xmpp/jid"
+
 	"github.com/ortuman/jackal/log"
 	"github.com/ortuman/jackal/xmpp"
 	"golang.org/x/net/http2"
@@ -26,7 +28,7 @@ const (
 	routePath = "/route"
 )
 
-type StanzaHandler = func(ctx context.Context, stanza xmpp.Stanza) error
+type StanzaHandler = func(ctx context.Context, stanza xmpp.Stanza, toJID *jid.JID) error
 
 type server struct {
 	stanzaHnd atomic.Value
@@ -76,6 +78,13 @@ func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+	to := r.URL.Query().Get("to")
+	if len(to) == 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	toJID, _ := jid.NewWithString(to, true)
+
 	p := xmpp.NewParser(r.Body, xmpp.DefaultMode, 0)
 	elem, err := p.ParseElement()
 	if err != nil {
@@ -91,7 +100,7 @@ func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	hnd, ok := s.stanzaHnd.Load().(StanzaHandler)
 	if ok {
-		_ = hnd(r.Context(), stanza)
+		_ = hnd(r.Context(), stanza, toJID)
 	}
 	w.WriteHeader(http.StatusOK)
 }

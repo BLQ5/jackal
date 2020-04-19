@@ -23,9 +23,11 @@ var pingInterval = 15 * time.Second
 var pingTimeout = 10 * time.Second
 
 type Storage struct {
+	*Allocation
 	*User
-	*Roster
+	*Resources
 	*Presences
+	*Roster
 	*VCard
 	*Private
 	*BlockList
@@ -54,9 +56,11 @@ func New(cfg *Config) (*Storage, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	c := &Storage{
+		Allocation: newAllocation(h),
 		User:       newUser(h),
-		Roster:     newRoster(h),
+		Resources:  newResources(h),
 		Presences:  newPresences(h),
+		Roster:     newRoster(h),
 		VCard:      newVCard(h),
 		Private:    newPrivate(h),
 		BlockList:  newBlockList(h),

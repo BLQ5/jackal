@@ -129,7 +129,7 @@ route2all:
 func (r *c2sRouter) routeToFullResource(ctx context.Context, stanza xmpp.Stanza, resources []model.Resource) error {
 	toJID := stanza.ToJID()
 	for _, res := range resources {
-		if stanza.ToJID().Resource() != res.JID.Resource() {
+		if toJID.Resource() != res.JID.Resource() {
 			continue
 		}
 		return r.routeToAllocation(ctx, stanza, []*jid.JID{toJID}, res.AllocationID)
@@ -143,7 +143,7 @@ func (r *c2sRouter) routeToPrioritaryResources(ctx context.Context, stanza xmpp.
 	})
 	highestPriority := resources[0].Priority
 	if highestPriority <= 0 {
-		return false, nil // no prioritary presence found
+		return false, nil // no prioritary resource found
 	}
 	var prioritaryResources []model.Resource
 	for _, res := range resources {

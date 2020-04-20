@@ -9,11 +9,10 @@ import (
 	"context"
 	"sync"
 
-	"github.com/ortuman/jackal/xmpp/jid"
-
 	"github.com/ortuman/jackal/router"
 	"github.com/ortuman/jackal/stream"
 	"github.com/ortuman/jackal/xmpp"
+	"github.com/ortuman/jackal/xmpp/jid"
 )
 
 type resources struct {

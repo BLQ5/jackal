@@ -220,6 +220,7 @@ func (a *Application) Run() error {
 		a.comps,
 		a.router,
 		a.storage.User,
+		a.storage.Resources,
 		a.storage.BlockList,
 		a.storage.Allocation,
 		a.cluster,

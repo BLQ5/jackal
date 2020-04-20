@@ -32,6 +32,7 @@ type server struct {
 	comps           *component.Components
 	router          router.Router
 	userSt          storage.User
+	resourcesSt     storage.Resources
 	blockListSt     storage.BlockList
 	inConnectionsMu sync.Mutex
 	inConnections   map[string]stream.C2S
@@ -40,7 +41,15 @@ type server struct {
 	listening       uint32
 }
 
-func newC2SServer(config *Config, mods *module.Modules, comps *component.Components, router router.Router, userSt storage.User, blockListSt storage.BlockList) c2sServer {
+func newC2SServer(
+	config *Config,
+	mods *module.Modules,
+	comps *component.Components,
+	router router.Router,
+	userSt storage.User,
+	resourcesSt storage.Resources,
+	blockListSt storage.BlockList,
+) c2sServer {
 	return &server{
 		cfg:           config,
 		mods:          mods,
@@ -116,7 +125,7 @@ func (s *server) startStream(tr transport.Transport) {
 		compression:      s.cfg.Compression,
 		onDisconnect:     s.unregisterStream,
 	}
-	stm := newStream(s.nextID(), cfg, tr, s.mods, s.comps, s.router, s.userSt, s.blockListSt)
+	stm := newStream(s.nextID(), cfg, tr, s.mods, s.comps, s.router, s.userSt, s.resourcesSt, s.blockListSt)
 	s.registerStream(stm)
 }
 

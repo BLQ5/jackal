@@ -54,6 +54,7 @@ func New(
 	comps *component.Components,
 	router router.Router,
 	userSt storage.User,
+	resourcesSt storage.Resources,
 	blockListSt storage.BlockList,
 	allocationSt storage.Allocation,
 	cluster *cluster.Cluster,
@@ -68,7 +69,7 @@ func New(
 		cluster:      cluster,
 	}
 	for _, config := range configs {
-		srv := createC2SServer(&config, mods, comps, router, userSt, blockListSt)
+		srv := createC2SServer(&config, mods, comps, router, userSt, resourcesSt, blockListSt)
 		c.servers[config.ID] = srv
 	}
 	return c, nil

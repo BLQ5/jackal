@@ -90,7 +90,8 @@ func New(output io.Writer, args []string) *Application {
 		output:           output,
 		args:             args,
 		waitStopCh:       make(chan os.Signal, 1),
-		shutDownWaitSecs: defaultShutDownWaitTime}
+		shutDownWaitSecs: defaultShutDownWaitTime,
+	}
 }
 
 // Run runs jackal application until either a stop signal is received or an error occurs.
@@ -177,7 +178,12 @@ func (a *Application) Run() error {
 		a.s2sOutProvider = s2s.NewOutProvider(cfg.S2S, hosts)
 		s2sRouter = s2srouter.New(a.s2sOutProvider)
 	}
-	c2sRouter, err := c2srouter.New(a.storage.User, a.storage.Resources, a.storage.BlockList, a.cluster)
+	c2sRouter, err := c2srouter.New(
+		a.storage.User,
+		a.storage.Resources,
+		a.storage.BlockList,
+		a.cluster,
+	)
 	if err != nil {
 		return err
 	}
@@ -199,11 +205,25 @@ func (a *Application) Run() error {
 		return err
 	}
 	if cfg.S2S != nil {
-		a.s2s = s2s.New(cfg.S2S, a.mods, a.s2sOutProvider, a.router)
+		a.s2s = s2s.New(
+			cfg.S2S,
+			a.mods,
+			a.s2sOutProvider,
+			a.router,
+		)
 		a.s2s.Start()
 	}
 	// start serving c2s...
-	a.c2s, err = c2s.New(cfg.C2S, a.mods, a.comps, a.router, a.storage.User, a.storage.BlockList, a.storage.Allocation, a.cluster)
+	a.c2s, err = c2s.New(
+		cfg.C2S,
+		a.mods,
+		a.comps,
+		a.router,
+		a.storage.User,
+		a.storage.BlockList,
+		a.storage.Allocation,
+		a.cluster,
+	)
 	if err != nil {
 		return err
 	}

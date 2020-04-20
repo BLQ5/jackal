@@ -24,8 +24,9 @@ func TestPgSQLStorage_AllocationsRegister(t *testing.T) {
 	err := s.RegisterAllocation(context.Background(), &model.Allocation{
 		ID: "a1234",
 	})
-	require.Nil(t, mock.ExpectationsWereMet())
 	require.Nil(t, err)
+
+	require.Nil(t, mock.ExpectationsWereMet())
 }
 
 func TestPgSQLStorage_AllocationsUnregister(t *testing.T) {
@@ -44,8 +45,9 @@ func TestPgSQLStorage_AllocationsUnregister(t *testing.T) {
 	mock.ExpectCommit()
 
 	err := s.UnregisterAllocation(context.Background(), "a1234")
-	require.Nil(t, mock.ExpectationsWereMet())
 	require.Nil(t, err)
+
+	require.Nil(t, mock.ExpectationsWereMet())
 }
 
 func TestPgSQLStorage_AllocationsFetchAllocations(t *testing.T) {
@@ -63,7 +65,6 @@ func TestPgSQLStorage_AllocationsFetchAllocations(t *testing.T) {
 	require.Len(t, allocs, 2)
 
 	require.Nil(t, mock.ExpectationsWereMet())
-	require.Nil(t, err)
 }
 
 func newAllocationsMock() (*Allocations, sqlmock.Sqlmock) {

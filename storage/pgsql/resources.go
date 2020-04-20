@@ -48,6 +48,7 @@ func (r *Resources) DeleteResource(ctx context.Context, username, domain, resour
 
 func (r *Resources) FetchResources(ctx context.Context, username, domain string) ([]model.Resource, error) {
 	rows, err := sq.Select("allocation_id", "username", "domain", "resource", "priority").
+		From("resources").
 		Where(sq.And{
 			sq.Eq{"username": username},
 			sq.Eq{"domain": domain},
@@ -61,13 +62,13 @@ func (r *Resources) FetchResources(ctx context.Context, username, domain string)
 
 	var resources []model.Resource
 	for rows.Next() {
-		var allocID, jidStr string
+		var allocID, username, domain, resource string
 		var priority int8
 
-		if err := rows.Scan(&allocID, &jidStr, &priority); err != nil {
+		if err := rows.Scan(&allocID, &username, &domain, &resource, &priority); err != nil {
 			return nil, err
 		}
-		resJID, _ := jid.NewWithString(jidStr, true)
+		resJID, _ := jid.New(username, domain, resource, true)
 		resources = append(resources, model.Resource{
 			AllocationID: allocID,
 			JID:          resJID,

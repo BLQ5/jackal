@@ -21,14 +21,13 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/ortuman/jackal/model"
-
 	"github.com/google/uuid"
 	"github.com/ortuman/jackal/c2s"
 	c2srouter "github.com/ortuman/jackal/c2s/router"
 	"github.com/ortuman/jackal/cluster"
 	"github.com/ortuman/jackal/component"
 	"github.com/ortuman/jackal/log"
+	"github.com/ortuman/jackal/model"
 	"github.com/ortuman/jackal/module"
 	"github.com/ortuman/jackal/router"
 	"github.com/ortuman/jackal/router/host"

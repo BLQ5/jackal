@@ -45,9 +45,9 @@ func (s *Presences) UpsertPresence(ctx context.Context, presence *xmpp.Presence,
 	rawXML := buf.String()
 
 	q := sq.Insert("presences").
-		Columns("username", "domain", "resource", "presence", "priority", "node", "ver", "allocation_id").
-		Values(jid.Node(), jid.Domain(), jid.Resource(), rawXML, presence.Priority(), node, ver, allocationID).
-		Suffix("ON CONFLICT (username, domain, resource) DO UPDATE SET presence = $4, priority = $5, node = $6, ver = $7, allocation_id = $7").
+		Columns("username", "domain", "resource", "presence", "node", "ver", "allocation_id").
+		Values(jid.Node(), jid.Domain(), jid.Resource(), rawXML, node, ver, allocationID).
+		Suffix("ON CONFLICT (username, domain, resource) DO UPDATE SET presence = $4, node = $5, ver = $6, allocation_id = $7").
 		Suffix("RETURNING CASE WHEN updated_at=created_at THEN true ELSE false END AS inserted")
 
 	var inserted bool

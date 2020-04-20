@@ -26,8 +26,8 @@ func newResources(db *sql.DB) *Resources {
 
 func (r *Resources) UpsertResource(ctx context.Context, resource *model.Resource) error {
 	_, err := sq.Insert("resources").
-		Columns("allocation_id", "username", "domain", "resource", "priority").
-		Values(resource.AllocationID, resource.JID.Node(), resource.JID.Domain(), resource.JID.Resource(), resource.Priority).
+		Columns("allocation_id", "username", "domain", "resource", "priority", "updated_at", "created_at").
+		Values(resource.AllocationID, resource.JID.Node(), resource.JID.Domain(), resource.JID.Resource(), resource.Priority, nowExpr, nowExpr).
 		Suffix("ON DUPLICATE KEY UPDATE allocation_id = ?, priority = ?, updated_at = NOW()", resource.AllocationID, resource.Priority).
 		RunWith(r.db).
 		ExecContext(ctx)

@@ -45,9 +45,9 @@ func (s *Presences) UpsertPresence(ctx context.Context, presence *xmpp.Presence,
 	rawXML := buf.String()
 
 	q := sq.Insert("presences").
-		Columns("username", "domain", "resource", "presence", "priority", "node", "ver", "allocation_id", "updated_at", "created_at").
-		Values(jid.Node(), jid.Domain(), jid.Resource(), rawXML, presence.Priority(), node, ver, allocationID, nowExpr, nowExpr).
-		Suffix("ON DUPLICATE KEY UPDATE presence = ?, priority = ?, node = ?, ver = ?, allocation_id = ?, updated_at = NOW()", rawXML, presence.Priority(), node, ver, allocationID)
+		Columns("username", "domain", "resource", "presence", "node", "ver", "allocation_id", "updated_at", "created_at").
+		Values(jid.Node(), jid.Domain(), jid.Resource(), rawXML, node, ver, allocationID, nowExpr, nowExpr).
+		Suffix("ON DUPLICATE KEY UPDATE presence = ?, node = ?, ver = ?, allocation_id = ?, updated_at = NOW()", rawXML, node, ver, allocationID)
 	stmRes, err := q.RunWith(s.db).ExecContext(ctx)
 	if err != nil {
 		return false, err

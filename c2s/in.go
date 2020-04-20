@@ -12,6 +12,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/ortuman/jackal/model"
+
 	"github.com/google/uuid"
 	"github.com/ortuman/jackal/auth"
 	"github.com/ortuman/jackal/component"
@@ -40,6 +42,7 @@ const (
 
 type inStream struct {
 	cfg            *streamConfig
+	allocationID   string
 	router         router.Router
 	userSt         storage.User
 	resourcesSt    storage.Resources
@@ -68,6 +71,7 @@ type inStream struct {
 func newStream(
 	id string,
 	config *streamConfig,
+	allocationID string,
 	tr transport.Transport,
 	mods *module.Modules,
 	comps *component.Components,
@@ -78,18 +82,19 @@ func newStream(
 ) stream.C2S {
 	ctx, ctxCancelFn := context.WithCancel(context.Background())
 	s := &inStream{
-		cfg:         config,
-		tr:          tr,
-		router:      router,
-		userSt:      userSt,
-		resourcesSt: resourcesSt,
-		blockListSt: blockListSt,
-		mods:        mods,
-		comps:       comps,
-		id:          id,
-		runQueue:    runqueue.New(id),
-		ctx:         ctx,
-		ctxCancelFn: ctxCancelFn,
+		cfg:          config,
+		allocationID: allocationID,
+		tr:           tr,
+		router:       router,
+		userSt:       userSt,
+		resourcesSt:  resourcesSt,
+		blockListSt:  blockListSt,
+		mods:         mods,
+		comps:        comps,
+		id:           id,
+		runQueue:     runqueue.New(id),
+		ctx:          ctx,
+		ctxCancelFn:  ctxCancelFn,
 	}
 
 	// initialize stream context
@@ -665,7 +670,7 @@ func (s *inStream) processPresence(ctx context.Context, presence *xmpp.Presence)
 
 	// update presence
 	if replyOnBehalf && (presence.IsAvailable() || presence.IsUnavailable()) {
-		s.setPresence(presence)
+		s.setPresence(ctx, presence)
 	}
 	// process presence
 	if r := s.mods.Roster; r != nil {
@@ -850,7 +855,24 @@ func (s *inStream) restartSession() {
 	s.setState(connecting)
 }
 
-func (s *inStream) setPresence(presence *xmpp.Presence) {
+func (s *inStream) setPresence(ctx context.Context, presence *xmpp.Presence) {
+	var err error
+
+	fromJID := presence.FromJID()
+	switch presence.Type() {
+	case xmpp.AvailableType:
+		err = s.resourcesSt.UpsertResource(ctx, &model.Resource{
+			AllocationID: s.allocationID,
+			JID:          fromJID,
+			Priority:     presence.Priority(),
+		})
+	case xmpp.UnavailableType:
+		err = s.resourcesSt.DeleteResource(ctx, fromJID.Node(), fromJID.Domain(), fromJID.Resource())
+	}
+	if err != nil {
+		log.Warnf("failed to update resource: %s... id: %s", err, s.id)
+		return
+	}
 	s.mu.Lock()
 	s.presence = presence
 	s.mu.Unlock()

@@ -216,6 +216,7 @@ func (a *Application) Run() error {
 	// start serving c2s...
 	a.c2s, err = c2s.New(
 		cfg.C2S,
+		a.allocID,
 		a.mods,
 		a.comps,
 		a.router,

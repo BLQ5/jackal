@@ -50,6 +50,7 @@ type C2S struct {
 // New returns a new instance of a c2s connection manager.
 func New(
 	configs []Config,
+	allocationID string,
 	mods *module.Modules,
 	comps *component.Components,
 	router router.Router,
@@ -69,7 +70,7 @@ func New(
 		cluster:      cluster,
 	}
 	for _, config := range configs {
-		srv := createC2SServer(&config, mods, comps, router, userSt, resourcesSt, blockListSt)
+		srv := createC2SServer(&config, allocationID, mods, comps, router, userSt, resourcesSt, blockListSt)
 		c.servers[config.ID] = srv
 	}
 	return c, nil

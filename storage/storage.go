@@ -56,9 +56,11 @@ func initMySQL(config *mysql.Config) (*Storage, error) {
 		return nil, err
 	}
 	return &Storage{
+		Allocation:            mySQLStorage.Allocation,
 		User:                  mySQLStorage.User,
-		Roster:                mySQLStorage.Roster,
+		Resources:             mySQLStorage.Resources,
 		Presences:             mySQLStorage.Presences,
+		Roster:                mySQLStorage.Roster,
 		VCard:                 mySQLStorage.VCard,
 		Private:               mySQLStorage.Private,
 		BlockList:             mySQLStorage.BlockList,
@@ -75,9 +77,11 @@ func initPgSQL(config *pgsql.Config) (*Storage, error) {
 		return nil, err
 	}
 	return &Storage{
+		Allocation:            pgSQLStorage.Allocation,
 		User:                  pgSQLStorage.User,
-		Roster:                pgSQLStorage.Roster,
+		Resources:             pgSQLStorage.Resources,
 		Presences:             pgSQLStorage.Presences,
+		Roster:                pgSQLStorage.Roster,
 		VCard:                 pgSQLStorage.VCard,
 		Private:               pgSQLStorage.Private,
 		BlockList:             pgSQLStorage.BlockList,
@@ -94,9 +98,11 @@ func initMemoryStorage() (*Storage, error) {
 		return nil, err
 	}
 	return &Storage{
+		Allocation:            memStorage.Allocation,
 		User:                  memStorage.User,
-		Roster:                memStorage.Roster,
+		Resources:             memStorage.Resources,
 		Presences:             memStorage.Presences,
+		Roster:                memStorage.Roster,
 		VCard:                 memStorage.VCard,
 		Private:               memStorage.Private,
 		BlockList:             memStorage.BlockList,

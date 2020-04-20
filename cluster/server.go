@@ -9,6 +9,7 @@ import (
 	"context"
 	"net/http"
 	"strconv"
+	"strings"
 	"sync/atomic"
 
 	"github.com/ortuman/jackal/xmpp/jid"
@@ -78,12 +79,16 @@ func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	to := r.URL.Query().Get("to")
-	if len(to) == 0 {
+	dests := strings.Split(r.URL.Query().Get("to"), ",")
+	if len(dests) == 0 {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	toJID, _ := jid.NewWithString(to, true)
+	var toJIDs []*jid.JID
+	for _, dest := range dests {
+		toJID, _ := jid.NewWithString(dest, true)
+		toJIDs = append(toJIDs, toJID)
+	}
 
 	p := xmpp.NewParser(r.Body, xmpp.DefaultMode, 0)
 	elem, err := p.ParseElement()
@@ -100,7 +105,9 @@ func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	hnd, ok := s.stanzaHnd.Load().(StanzaHandler)
 	if ok {
-		_ = hnd(r.Context(), stanza, toJID)
+		for _, toJID := range toJIDs {
+			_ = hnd(r.Context(), stanza, toJID)
+		}
 	}
 	w.WriteHeader(http.StatusOK)
 }

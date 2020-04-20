@@ -11,6 +11,7 @@ import (
 	"sync/atomic"
 
 	"github.com/ortuman/jackal/component"
+	"github.com/ortuman/jackal/log"
 	"github.com/ortuman/jackal/module"
 	"github.com/ortuman/jackal/router"
 	"github.com/ortuman/jackal/storage"
@@ -60,6 +61,7 @@ func (c *C2S) Start() {
 		for _, srv := range c.servers {
 			go srv.start()
 		}
+		log.Infof("c2s started")
 	}
 }
 
@@ -71,6 +73,7 @@ func (c *C2S) Shutdown(ctx context.Context) error {
 				return err
 			}
 		}
+		log.Infof("shutdown complete")
 	}
 	return nil
 }

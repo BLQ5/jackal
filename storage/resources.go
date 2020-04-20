@@ -13,6 +13,7 @@ import (
 
 type Resources interface {
 	UpsertResource(ctx context.Context, resource *model.Resource, allocationID string) error
+	DeleteResource(ctx context.Context, username, domain, resource string) error
 
 	FetchResources(ctx context.Context, username, domain string) ([]model.Resource, error)
 }

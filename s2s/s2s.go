@@ -9,6 +9,8 @@ import (
 	"context"
 	"sync/atomic"
 
+	"github.com/ortuman/jackal/log"
+
 	"github.com/ortuman/jackal/module"
 	"github.com/ortuman/jackal/router"
 )
@@ -50,6 +52,8 @@ func New(config *Config, mods *module.Modules, outProvider *OutProvider, router 
 func (s *S2S) Start() {
 	if atomic.CompareAndSwapUint32(&s.started, 0, 1) {
 		go s.srv.start()
+
+		log.Infof("s2s started")
 	}
 }
 
@@ -59,6 +63,7 @@ func (s *S2S) Shutdown(ctx context.Context) error {
 		if err := s.srv.shutdown(ctx); err != nil {
 			return err
 		}
+		log.Infof("shutdown complete")
 	}
 	return nil
 }

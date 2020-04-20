@@ -6,6 +6,8 @@
 package memorystorage
 
 import (
+	"context"
+
 	"github.com/ortuman/jackal/model"
 )
 
@@ -17,10 +19,14 @@ func NewResources() *Resources {
 	return &Resources{memoryStorage: newStorage()}
 }
 
-func (r *Resources) UpsertResource(resource *model.Resource, allocationID string) error {
+func (r *Resources) UpsertResource(ctx context.Context, resource *model.Resource, allocationID string) error {
 	panic("implement me!")
 }
 
-func (r *Resources) FetchResources(username, domain string) ([]model.Resource, error) {
+func (r *Resources) DeleteResource(ctx context.Context, username, domain, resource string) error {
+	panic("implement me!")
+}
+
+func (r *Resources) FetchResources(ctx context.Context, username, domain string) ([]model.Resource, error) {
 	panic("implement me!")
 }

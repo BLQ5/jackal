@@ -9,7 +9,6 @@ import (
 	"context"
 
 	"github.com/ortuman/jackal/model"
-
 	capsmodel "github.com/ortuman/jackal/model/capabilities"
 	"github.com/ortuman/jackal/xmpp"
 	"github.com/ortuman/jackal/xmpp/jid"
@@ -28,12 +27,6 @@ type Presences interface {
 
 	// DeletePresence removes from storage a concrete registered presence.
 	DeletePresence(ctx context.Context, jid *jid.JID) error
-
-	// DeleteAllocationPresences removes from storage all presences associated to a given allocation.
-	DeleteAllocationPresences(ctx context.Context, allocationID string) error
-
-	// FetchAllocationIDs returns all allocation identifiers that registered one or more presences.
-	FetchAllocationIDs(ctx context.Context) ([]string, error)
 
 	// UpsertCapabilities inserts capabilities associated to a node+ver pair, or updates them if previously inserted..
 	UpsertCapabilities(ctx context.Context, caps *capsmodel.Capabilities) error

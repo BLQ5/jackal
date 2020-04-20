@@ -54,7 +54,6 @@ func (m *Presences) FetchPresence(_ context.Context, jid *jid.JID) (*model.ExtPr
 			if err != nil {
 				return err
 			}
-			extPresence.AllocationID = allocationIDFromKey(k)
 			res = extPresence
 			return nil
 		}
@@ -105,7 +104,6 @@ func (m *Presences) FetchPresencesMatchingJID(ctx context.Context, j *jid.JID) (
 			if err != nil {
 				return err
 			}
-			extPresence.AllocationID = allocationIDFromKey(k)
 			res = append(res, *extPresence)
 		}
 		return nil
@@ -125,35 +123,6 @@ func (m *Presences) DeletePresence(_ context.Context, jid *jid.JID) error {
 		}
 		return nil
 	})
-}
-
-func (m *Presences) DeleteAllocationPresences(_ context.Context, allocationID string) error {
-	return m.inWriteLock(func() error {
-		for k := range m.b {
-			if strings.HasPrefix(k, "presences:") && strings.HasSuffix(k, ":"+allocationID) {
-				delete(m.b, k)
-			}
-		}
-		return nil
-	})
-}
-
-func (m *Presences) FetchAllocationIDs(_ context.Context) ([]string, error) {
-	allocationIDs := make(map[string]struct{})
-	if err := m.inReadLock(func() error {
-		for k := range m.b {
-			ss := strings.Split(k, ":")
-			allocationIDs[ss[2]] = struct{}{}
-		}
-		return nil
-	}); err != nil {
-		return nil, err
-	}
-	var res []string
-	for allocID := range allocationIDs {
-		res = append(res, allocID)
-	}
-	return res, nil
 }
 
 func (m *Presences) UpsertCapabilities(_ context.Context, caps *capsmodel.Capabilities) error {
@@ -201,12 +170,4 @@ func presenceKey(jid *jid.JID, allocationID string) string {
 
 func capabilitiesKey(node, ver string) string {
 	return "capabilities:" + node + ":" + ver
-}
-
-func allocationIDFromKey(k string) string {
-	ss := strings.Split(k, ":")
-	if len(ss) != 3 {
-		return ""
-	}
-	return ss[2]
 }

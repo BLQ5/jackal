@@ -15,13 +15,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestPresenceCapabilities(t *testing.T) {
+func TestExtPresence(t *testing.T) {
 	j1, _ := jid.NewWithString("ortuman@jackal.im", true)
 
 	var p1, p2 ExtPresence
 	p1 = ExtPresence{
-		AllocationID: "a1234",
-		Presence:     xmpp.NewPresence(j1, j1, xmpp.AvailableType),
+		Presence: xmpp.NewPresence(j1, j1, xmpp.AvailableType),
 	}
 
 	buf := new(bytes.Buffer)
@@ -31,8 +30,7 @@ func TestPresenceCapabilities(t *testing.T) {
 
 	var p3, p4 ExtPresence
 	p3 = ExtPresence{
-		AllocationID: "a5678",
-		Presence:     xmpp.NewPresence(j1, j1, xmpp.AvailableType),
+		Presence: xmpp.NewPresence(j1, j1, xmpp.AvailableType),
 		Caps: &capsmodel.Capabilities{
 			Node: "http://jackal.im",
 			Ver:  "v1234",

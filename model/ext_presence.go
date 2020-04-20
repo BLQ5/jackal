@@ -15,9 +15,6 @@ import (
 
 // ExtPresence represents an extended presence type.
 type ExtPresence struct {
-	// AllocationID specifies the allocation identifier of the node that registered the presence.
-	AllocationID string
-
 	// Presence contains presence stanza value.
 	Presence *xmpp.Presence
 
@@ -25,7 +22,7 @@ type ExtPresence struct {
 	Caps *capsmodel.Capabilities
 }
 
-// FromBytes deserializes a Capabilities entity from its binary representation.
+// FromBytes deserializes a ExtPresence entity from its binary representation.
 func (p *ExtPresence) FromBytes(buf *bytes.Buffer) error {
 	presence, err := xmpp.NewPresenceFromBytes(buf)
 	if err != nil {
@@ -34,9 +31,6 @@ func (p *ExtPresence) FromBytes(buf *bytes.Buffer) error {
 	var hasCaps bool
 
 	dec := gob.NewDecoder(buf)
-	if err := dec.Decode(&p.AllocationID); err != nil {
-		return err
-	}
 	if err := dec.Decode(&hasCaps); err != nil {
 		return err
 	}
@@ -47,16 +41,13 @@ func (p *ExtPresence) FromBytes(buf *bytes.Buffer) error {
 	return nil
 }
 
-// ToBytes converts a Capabilities entity to its binary representation.
+// ToBytes converts a ExtPresence entity to its binary representation.
 func (p *ExtPresence) ToBytes(buf *bytes.Buffer) error {
 	if err := p.Presence.ToBytes(buf); err != nil {
 		return err
 	}
 	enc := gob.NewEncoder(buf)
 
-	if err := enc.Encode(p.AllocationID); err != nil {
-		return err
-	}
 	hasCaps := p.Caps != nil
 	if err := enc.Encode(hasCaps); err != nil {
 		return err

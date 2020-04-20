@@ -30,13 +30,13 @@ func TestPgSQLPresences_UpsertPresence(t *testing.T) {
 }
 
 func TestPgSQLPresences_FetchPresence(t *testing.T) {
-	var columns = []string{"allocation_id", "presence", "c.node", "c.ver", "c.features"}
+	var columns = []string{"presence", "c.node", "c.ver", "c.features"}
 
 	s, mock := newPresencesMock()
-	mock.ExpectQuery("SELECT allocation_id, presence, c.node, c.ver, c.features FROM presences AS p, capabilities AS c WHERE \\(username = \\? AND domain = \\? AND resource = \\? AND p.node = c.node AND p.ver = c.ver\\)").
+	mock.ExpectQuery("SELECT presence, c.node, c.ver, c.features FROM presences AS p, capabilities AS c WHERE \\(username = \\? AND domain = \\? AND resource = \\? AND p.node = c.node AND p.ver = c.ver\\)").
 		WithArgs("ortuman", "jackal.im", "yard").
 		WillReturnRows(sqlmock.NewRows(columns).
-			AddRow("a1234", "<presence/>", "http://jackal.im", "v1234", `["urn:xmpp:ping"]`))
+			AddRow("<presence/>", "http://jackal.im", "v1234", `["urn:xmpp:ping"]`))
 
 	j, _ := jid.NewWithString("ortuman@jackal.im/yard", true)
 	extPresence, err := s.FetchPresence(context.Background(), j)
@@ -55,11 +55,11 @@ func TestPgSQLPresences_FetchPresencesMatchingJID(t *testing.T) {
 	var columns = []string{"allocation_id", "presence", "c.node", "c.ver", "c.features"}
 
 	s, mock := newPresencesMock()
-	mock.ExpectQuery("SELECT allocation_id, presence, c.node, c.ver, c.features FROM presences AS p, capabilities AS c WHERE \\(username = \\? AND domain = \\? AND resource = \\? AND p.node = c.node AND p.ver = c.ver\\)").
+	mock.ExpectQuery("SELECT presence, c.node, c.ver, c.features FROM presences AS p, capabilities AS c WHERE \\(username = \\? AND domain = \\? AND resource = \\? AND p.node = c.node AND p.ver = c.ver\\)").
 		WithArgs("ortuman", "jackal.im", "yard").
 		WillReturnRows(sqlmock.NewRows(columns).
-			AddRow("a1234", "<presence/>", "http://jackal.im", "v1234", `["urn:xmpp:ping"]`).
-			AddRow("a1234", "<presence/>", "http://jackal.im", "v1234", `["urn:xmpp:ping"]`),
+			AddRow("<presence/>", "http://jackal.im", "v1234", `["urn:xmpp:ping"]`).
+			AddRow("<presence/>", "http://jackal.im", "v1234", `["urn:xmpp:ping"]`),
 		)
 
 	j, _ := jid.NewWithString("ortuman@jackal.im/yard", true)
@@ -87,36 +87,6 @@ func TestPgSQLPresences_DeletePresence(t *testing.T) {
 
 	require.Nil(t, mock.ExpectationsWereMet())
 	require.Nil(t, err)
-}
-
-func TestPgSQLPresences_DeleteAllocationPresence(t *testing.T) {
-	s, mock := newPresencesMock()
-	mock.ExpectExec("DELETE FROM presences WHERE allocation_id = ?").
-		WithArgs("alloc-1234").
-		WillReturnResult(sqlmock.NewResult(1, 1))
-
-	err := s.DeleteAllocationPresences(context.Background(), "alloc-1234")
-
-	require.Nil(t, mock.ExpectationsWereMet())
-	require.Nil(t, err)
-}
-
-func TestPgSQLPresences_FetchAllocationIDs(t *testing.T) {
-	var columns = []string{"allocation_id"}
-
-	s, mock := newPresencesMock()
-	mock.ExpectQuery("SELECT allocation_id FROM presences GROUP BY allocation_id").
-		WillReturnRows(sqlmock.NewRows(columns).AddRow("a1").AddRow("a2"))
-
-	allocIDs, err := s.FetchAllocationIDs(context.Background())
-
-	require.Nil(t, mock.ExpectationsWereMet())
-
-	require.Nil(t, err)
-
-	require.Len(t, allocIDs, 2)
-	require.Equal(t, allocIDs[0], "a1")
-	require.Equal(t, allocIDs[1], "a2")
 }
 
 func TestPgSQLPresences_UpsertCapabilities(t *testing.T) {

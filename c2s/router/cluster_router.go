@@ -12,6 +12,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/ortuman/jackal/cluster"
@@ -60,7 +61,14 @@ func (r *clusterRouter) route(ctx context.Context, stanza xmpp.Stanza, toJIDs []
 	if err := stanza.ToXML(buf, true); err != nil {
 		return err
 	}
-	reqURL := fmt.Sprintf("http://%s:%s/route?to=%s", member.Host, member.Port, url.QueryEscape(toJIDs[0].String()))
+	var toParam strings.Builder
+	for i, toJID := range toJIDs {
+		if i != 0 {
+			toParam.WriteString(",")
+		}
+		toParam.WriteString(toJID.String())
+	}
+	reqURL := fmt.Sprintf("http://%s:%s/route?to=%s", member.Host, member.Port, url.QueryEscape(toParam.String()))
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, reqURL, buf)
 	if err != nil {

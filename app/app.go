@@ -363,7 +363,7 @@ func (a *Application) doShutdown(ctx context.Context) error {
 		return err
 	}
 	// shutdown cluster
-	if err := a.storage.DeleteAllocationPresences(ctx, a.allocID); err != nil {
+	if err := a.storage.UnregisterAllocation(ctx, a.allocID); err != nil {
 		return err
 	}
 	if a.cluster != nil {
@@ -371,7 +371,6 @@ func (a *Application) doShutdown(ctx context.Context) error {
 			return err
 		}
 	}
-
 	// shutdown storage
 	if err := a.storage.Shutdown(ctx); err != nil {
 		return err

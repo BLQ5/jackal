@@ -25,10 +25,10 @@ type c2sRouter struct {
 	userSt        storage.User
 	blockListSt   storage.BlockList
 	resourcesSt   storage.Resources
+	allocationSt  storage.Allocation
 	cluster       *cluster.Cluster
 	localRouter   *localRouter
 	clusterRouter *clusterRouter
-	allocationSt  storage.Allocation
 	closeCh       chan chan struct{}
 }
 
@@ -43,9 +43,9 @@ func New(
 		userSt:       userSt,
 		blockListSt:  blockListSt,
 		resourcesSt:  resourcesSt,
-		localRouter:  newLocalRouter(),
-		cluster:      cluster,
 		allocationSt: allocationSt,
+		cluster:      cluster,
+		localRouter:  newLocalRouter(),
 		closeCh:      make(chan chan struct{}, 1),
 	}
 	if cluster != nil {
@@ -264,17 +264,17 @@ func (r *c2sRouter) houseKeeping() error {
 	ctx, cancel := context.WithTimeout(context.Background(), (houseKeepingInterval*5)/10)
 	defer cancel()
 
-	allocIDs, err := r.allocationSt.FetchAllocations(ctx)
+	allocations, err := r.allocationSt.FetchAllocations(ctx)
 	if err != nil {
 		return err
 	}
 	members := r.cluster.Members()
-	for _, allocID := range allocIDs {
-		if m := members.Member(allocID); m != nil {
+	for _, alloc := range allocations {
+		if m := members.Member(alloc.ID); m != nil {
 			continue
 		}
 		// unregister inactive allocations
-		if err := r.allocationSt.UnregisterAllocation(ctx, allocID); err != nil {
+		if err := r.allocationSt.UnregisterAllocation(ctx, alloc.ID); err != nil {
 			return err
 		}
 	}

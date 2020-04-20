@@ -26,6 +26,10 @@ func (r *Resources) UpsertResource(ctx context.Context, resource *model.Resource
 	panic("implement me!")
 }
 
+func (r *Resources) DeleteResource(ctx context.Context, username, domain, resource string) error {
+	panic("implement me!")
+}
+
 func (r *Resources) FetchResources(ctx context.Context, username, domain string) ([]model.Resource, error) {
 	panic("implement me!")
 }

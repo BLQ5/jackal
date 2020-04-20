@@ -60,9 +60,9 @@ func (s *Presences) UpsertPresence(ctx context.Context, presence *xmpp.Presence,
 }
 
 func (s *Presences) FetchPresence(ctx context.Context, jid *jid.JID) (*model.ExtPresence, error) {
-	var allocID, rawXML, node, ver, featuresJSON string
+	var rawXML, node, ver, featuresJSON string
 
-	q := sq.Select("allocation_id", "presence", "c.node", "c.ver", "c.features").
+	q := sq.Select("presence", "c.node", "c.ver", "c.features").
 		From("presences AS p, capabilities AS c").
 		Where(sq.And{
 			sq.Eq{"username": jid.Node()},
@@ -73,10 +73,10 @@ func (s *Presences) FetchPresence(ctx context.Context, jid *jid.JID) (*model.Ext
 		}).
 		RunWith(s.db)
 
-	err := q.ScanContext(ctx, &allocID, &rawXML, &node, &ver, &featuresJSON)
+	err := q.ScanContext(ctx, &rawXML, &node, &ver, &featuresJSON)
 	switch err {
 	case nil:
-		return scanExtendedPresence(allocID, rawXML, node, ver, featuresJSON)
+		return scanExtendedPresence(rawXML, node, ver, featuresJSON)
 	case sql.ErrNoRows:
 		return nil, nil
 	default:
@@ -98,7 +98,7 @@ func (s *Presences) FetchPresencesMatchingJID(ctx context.Context, jid *jid.JID)
 	preds = append(preds, sq.Expr("p.node = c.node"))
 	preds = append(preds, sq.Expr("p.ver = c.ver"))
 
-	q := sq.Select("allocation_id", "presence", "c.node", "c.ver", "c.features").
+	q := sq.Select("presence", "c.node", "c.ver", "c.features").
 		From("presences AS p, capabilities AS c").
 		Where(preds).
 		RunWith(s.db)
@@ -111,12 +111,12 @@ func (s *Presences) FetchPresencesMatchingJID(ctx context.Context, jid *jid.JID)
 
 	var res []model.ExtPresence
 	for rows.Next() {
-		var allocID, rawXML, node, ver, featuresJSON string
+		var rawXML, node, ver, featuresJSON string
 
-		if err := rows.Scan(&allocID, &rawXML, &node, &ver, &featuresJSON); err != nil {
+		if err := rows.Scan(&rawXML, &node, &ver, &featuresJSON); err != nil {
 			return nil, err
 		}
-		extPresence, err := scanExtendedPresence(allocID, rawXML, node, ver, featuresJSON)
+		extPresence, err := scanExtendedPresence(rawXML, node, ver, featuresJSON)
 		if err != nil {
 			return nil, err
 		}
@@ -134,35 +134,6 @@ func (s *Presences) DeletePresence(ctx context.Context, jid *jid.JID) error {
 		}).
 		RunWith(s.db).ExecContext(ctx)
 	return err
-}
-
-func (s *Presences) DeleteAllocationPresences(ctx context.Context, allocationID string) error {
-	_, err := sq.Delete("presences").
-		Where(sq.Eq{"allocation_id": allocationID}).
-		RunWith(s.db).ExecContext(ctx)
-	return err
-}
-
-func (s *Presences) FetchAllocationIDs(ctx context.Context) ([]string, error) {
-	rows, err := sq.Select("allocation_id").
-		From("presences").
-		GroupBy("allocation_id").
-		RunWith(s.db).
-		QueryContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-	defer func() { _ = rows.Close() }()
-
-	var allocationIDs []string
-	for rows.Next() {
-		var allocationID string
-		if err := rows.Scan(&allocationID); err != nil {
-			return nil, err
-		}
-		allocationIDs = append(allocationIDs, allocationID)
-	}
-	return allocationIDs, nil
 }
 
 func (s *Presences) UpsertCapabilities(ctx context.Context, caps *capsmodel.Capabilities) error {
@@ -197,7 +168,7 @@ func (s *Presences) FetchCapabilities(ctx context.Context, node, ver string) (*c
 	}
 }
 
-func scanExtendedPresence(allocationID string, rawXML, node, ver, featuresJSON string) (*model.ExtPresence, error) {
+func scanExtendedPresence(rawXML, node, ver, featuresJSON string) (*model.ExtPresence, error) {
 	parser := xmpp.NewParser(strings.NewReader(rawXML), xmpp.DefaultMode, 0)
 	elem, err := parser.ParseElement()
 	if err != nil {
@@ -212,9 +183,7 @@ func scanExtendedPresence(allocationID string, rawXML, node, ver, featuresJSON s
 	}
 	var res model.ExtPresence
 
-	res.AllocationID = allocationID
 	res.Presence = presence
-
 	if len(featuresJSON) > 0 {
 		res.Caps = &capsmodel.Capabilities{
 			Node: node,

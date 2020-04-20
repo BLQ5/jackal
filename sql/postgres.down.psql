@@ -20,3 +20,4 @@ DROP TABLE IF EXISTS capabilities;
 DROP TABLE IF EXISTS presences;
 DROP TABLE IF EXISTS resources;
 DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS allocations;

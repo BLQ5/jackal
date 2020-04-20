@@ -7,6 +7,11 @@ package memorystorage
 
 import (
 	"context"
+	"strings"
+
+	"github.com/ortuman/jackal/model/serializer"
+
+	"github.com/ortuman/jackal/model"
 )
 
 type Allocation struct {
@@ -18,14 +23,34 @@ func NewAllocation() *Allocation {
 	return &Allocation{memoryStorage: newStorage()}
 }
 
-func (s *Allocation) RegisterAllocation(ctx context.Context, allocationID string) error {
-	panic("not implemented!")
+func (m *Allocation) RegisterAllocation(_ context.Context, allocation *model.Allocation) error {
+	return m.saveEntity(allocationKey(allocation.ID), allocation)
 }
 
-func (s *Allocation) UnregisterAllocation(ctx context.Context, allocationID string) error {
-	panic("not implemented!")
+func (m *Allocation) UnregisterAllocation(_ context.Context, allocationID string) error {
+	return m.deleteKey(allocationKey(allocationID))
 }
 
-func (s *Allocation) FetchAllocations(ctx context.Context) (allocationIDs []string, err error) {
-	panic("not implemented!")
+func (m *Allocation) FetchAllocations(_ context.Context) ([]model.Allocation, error) {
+	var allocations []model.Allocation
+	if err := m.inReadLock(func() error {
+		for k, b := range m.b {
+			if !strings.HasPrefix(k, "allocations:") {
+				continue
+			}
+			var alloc model.Allocation
+			if err := serializer.Deserialize(b, &alloc); err != nil {
+				return err
+			}
+			allocations = append(allocations, alloc)
+		}
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	return allocations, nil
+}
+
+func allocationKey(allocationID string) string {
+	return "allocations:" + allocationID
 }

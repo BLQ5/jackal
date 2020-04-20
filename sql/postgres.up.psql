@@ -32,6 +32,16 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- allocations
+
+CREATE TABLE IF NOT EXISTS users (
+    allocation_id VARCHAR(1023) PRIMARY KEY,
+    updated_at    TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    created_at    TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+SELECT enable_updated_at('allocations');
+
 -- users
 
 CREATE TABLE IF NOT EXISTS users (

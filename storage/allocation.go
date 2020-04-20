@@ -5,12 +5,16 @@
 
 package storage
 
-import "context"
+import (
+	"context"
+
+	"github.com/ortuman/jackal/model"
+)
 
 type Allocation interface {
-	RegisterAllocation(ctx context.Context, allocationID string) error
+	RegisterAllocation(ctx context.Context, allocation *model.Allocation) error
 
 	UnregisterAllocation(ctx context.Context, allocationID string) error
 
-	FetchAllocations(ctx context.Context) (allocationIDs []string, err error)
+	FetchAllocations(ctx context.Context) (allocations []model.Allocation, err error)
 }

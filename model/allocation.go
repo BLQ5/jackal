@@ -10,7 +10,7 @@ import (
 	"encoding/gob"
 )
 
-// Allocation represents a cluster allocation instance.
+// Allocations represents a cluster allocation instance.
 type Allocation struct {
 	// ID represents an allocation instance unique identifier
 	ID string

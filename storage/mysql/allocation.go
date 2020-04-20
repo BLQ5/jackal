@@ -13,17 +13,17 @@ import (
 	"github.com/ortuman/jackal/model"
 )
 
-type Allocation struct {
+type Allocations struct {
 	*mySQLStorage
 }
 
-func newAllocation(db *sql.DB) *Allocation {
-	return &Allocation{
+func newAllocations(db *sql.DB) *Allocations {
+	return &Allocations{
 		mySQLStorage: newStorage(db),
 	}
 }
 
-func (s *Allocation) RegisterAllocation(ctx context.Context, allocation *model.Allocation) error {
+func (s *Allocations) RegisterAllocation(ctx context.Context, allocation *model.Allocation) error {
 	_, err := sq.Insert("allocations").
 		Columns("allocation_id", "updated_at", "created_at").
 		Suffix("ON DUPLICATE KEY UPDATE updated_at = NOW()").
@@ -32,28 +32,31 @@ func (s *Allocation) RegisterAllocation(ctx context.Context, allocation *model.A
 	return err
 }
 
-func (s *Allocation) UnregisterAllocation(ctx context.Context, allocationID string) error {
+func (s *Allocations) UnregisterAllocation(ctx context.Context, allocationID string) error {
 	return s.inTransaction(ctx, func(tx *sql.Tx) error {
-		_, err := sq.Delete("presences").Where(sq.Eq{"allocation_id": allocationID}).
+		_, err := sq.Delete("presences").
+			Where(sq.Eq{"allocation_id": allocationID}).
 			RunWith(tx).
 			ExecContext(ctx)
 		if err != nil {
 			return err
 		}
-		_, err = sq.Delete("resources").Where(sq.Eq{"allocation_id": allocationID}).
+		_, err = sq.Delete("resources").
+			Where(sq.Eq{"allocation_id": allocationID}).
 			RunWith(tx).
 			ExecContext(ctx)
 		if err != nil {
 			return err
 		}
-		_, err = sq.Delete("allocations").Where(sq.Eq{"allocation_id": allocationID}).
+		_, err = sq.Delete("allocations").
+			Where(sq.Eq{"allocation_id": allocationID}).
 			RunWith(tx).
 			ExecContext(ctx)
 		return err
 	})
 }
 
-func (s *Allocation) FetchAllocations(ctx context.Context) ([]model.Allocation, error) {
+func (s *Allocations) FetchAllocations(ctx context.Context) ([]model.Allocation, error) {
 	q := sq.Select("DISTINCT(allocation_id)").
 		From("allocations").
 		RunWith(s.db)

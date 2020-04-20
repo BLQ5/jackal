@@ -18,8 +18,8 @@ type Allocation struct {
 	*memoryStorage
 }
 
-// NewAllocation returns an instance of Allocation in-memory storage.
-func NewAllocation() *Allocation {
+// NewAllocations returns an instance of Allocations in-memory storage.
+func NewAllocations() *Allocation {
 	return &Allocation{memoryStorage: newStorage()}
 }
 

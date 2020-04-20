@@ -52,7 +52,7 @@ func TestPgSQLPresences_FetchPresence(t *testing.T) {
 }
 
 func TestPgSQLPresences_FetchPresencesMatchingJID(t *testing.T) {
-	var columns = []string{"allocation_id", "presence", "c.node", "c.ver", "c.features"}
+	var columns = []string{"presence", "c.node", "c.ver", "c.features"}
 
 	s, mock := newPresencesMock()
 	mock.ExpectQuery("SELECT presence, c.node, c.ver, c.features FROM presences AS p, capabilities AS c WHERE \\(username = \\? AND domain = \\? AND resource = \\? AND p.node = c.node AND p.ver = c.ver\\)").

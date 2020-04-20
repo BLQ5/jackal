@@ -56,7 +56,7 @@ func initMySQL(config *mysql.Config) (*Storage, error) {
 		return nil, err
 	}
 	return &Storage{
-		Allocation:            mySQLStorage.Allocation,
+		Allocation:            mySQLStorage.Allocations,
 		User:                  mySQLStorage.User,
 		Resources:             mySQLStorage.Resources,
 		Presences:             mySQLStorage.Presences,
@@ -77,7 +77,7 @@ func initPgSQL(config *pgsql.Config) (*Storage, error) {
 		return nil, err
 	}
 	return &Storage{
-		Allocation:            pgSQLStorage.Allocation,
+		Allocation:            pgSQLStorage.Allocations,
 		User:                  pgSQLStorage.User,
 		Resources:             pgSQLStorage.Resources,
 		Presences:             pgSQLStorage.Presences,

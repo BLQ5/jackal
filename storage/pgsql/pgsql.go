@@ -23,7 +23,7 @@ var pingInterval = 15 * time.Second
 var pingTimeout = 10 * time.Second
 
 type Storage struct {
-	*Allocation
+	*Allocations
 	*User
 	*Resources
 	*Presences
@@ -56,19 +56,19 @@ func New(cfg *Config) (*Storage, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	c := &Storage{
-		Allocation: newAllocation(h),
-		User:       newUser(h),
-		Resources:  newResources(h),
-		Presences:  newPresences(h),
-		Roster:     newRoster(h),
-		VCard:      newVCard(h),
-		Private:    newPrivate(h),
-		BlockList:  newBlockList(h),
-		PubSub:     newPubSub(h),
-		Offline:    newOffline(h),
-		h:          h,
-		cancelPing: cancel,
-		doneCh:     make(chan chan bool, 1),
+		Allocations: newAllocations(h),
+		User:        newUser(h),
+		Resources:   newResources(h),
+		Presences:   newPresences(h),
+		Roster:      newRoster(h),
+		VCard:       newVCard(h),
+		Private:     newPrivate(h),
+		BlockList:   newBlockList(h),
+		PubSub:      newPubSub(h),
+		Offline:     newOffline(h),
+		h:           h,
+		cancelPing:  cancel,
+		doneCh:      make(chan chan bool, 1),
 	}
 	if err := c.ping(context.Background()); err != nil {
 		return nil, err

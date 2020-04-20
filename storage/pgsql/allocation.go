@@ -14,17 +14,17 @@ import (
 	sq "github.com/Masterminds/squirrel"
 )
 
-type Allocation struct {
+type Allocations struct {
 	*pgSQLStorage
 }
 
-func newAllocation(db *sql.DB) *Allocation {
-	return &Allocation{
+func newAllocations(db *sql.DB) *Allocations {
+	return &Allocations{
 		pgSQLStorage: newStorage(db),
 	}
 }
 
-func (s *Allocation) RegisterAllocation(ctx context.Context, allocation *model.Allocation) error {
+func (s *Allocations) RegisterAllocation(ctx context.Context, allocation *model.Allocation) error {
 	_, err := sq.Insert("allocations").
 		Columns("allocation_id").
 		Suffix("ON CONFLICT (allocation_id) DO NOTHING").
@@ -33,7 +33,7 @@ func (s *Allocation) RegisterAllocation(ctx context.Context, allocation *model.A
 	return err
 }
 
-func (s *Allocation) UnregisterAllocation(ctx context.Context, allocationID string) error {
+func (s *Allocations) UnregisterAllocation(ctx context.Context, allocationID string) error {
 	return s.inTransaction(ctx, func(tx *sql.Tx) error {
 		_, err := sq.Delete("presences").Where(sq.Eq{"allocation_id": allocationID}).
 			RunWith(tx).
@@ -54,7 +54,7 @@ func (s *Allocation) UnregisterAllocation(ctx context.Context, allocationID stri
 	})
 }
 
-func (s *Allocation) FetchAllocations(ctx context.Context) ([]model.Allocation, error) {
+func (s *Allocations) FetchAllocations(ctx context.Context) ([]model.Allocation, error) {
 	q := sq.Select("DISTINCT(allocation_id)").
 		From("allocations").
 		RunWith(s.db)

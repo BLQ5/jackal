@@ -27,7 +27,7 @@ type Storage struct {
 // New initializes in-memory storage and returns associated container.
 func New() (*Storage, error) {
 	return &Storage{
-		Allocation: NewAllocation(),
+		Allocation: NewAllocations(),
 		User:       NewUser(),
 		Resources:  NewResources(),
 		Presences:  NewPresences(),

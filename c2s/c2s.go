@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/ortuman/jackal/cluster"
-
 	"github.com/ortuman/jackal/component"
 	"github.com/ortuman/jackal/log"
 	"github.com/ortuman/jackal/module"

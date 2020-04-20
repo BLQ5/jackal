@@ -9,7 +9,6 @@ import (
 	"context"
 	"sort"
 	"sync"
-	"time"
 
 	"github.com/ortuman/jackal/cluster"
 	"github.com/ortuman/jackal/log"
@@ -22,31 +21,26 @@ import (
 )
 
 type c2sRouter struct {
+	cluster       *cluster.Cluster
 	userSt        storage.User
 	blockListSt   storage.BlockList
 	resourcesSt   storage.Resources
-	allocationSt  storage.Allocation
-	cluster       *cluster.Cluster
 	localRouter   *localRouter
 	clusterRouter *clusterRouter
-	closeCh       chan chan struct{}
 }
 
 func New(
 	userSt storage.User,
 	resourcesSt storage.Resources,
 	blockListSt storage.BlockList,
-	allocationSt storage.Allocation,
 	cluster *cluster.Cluster,
 ) (router.C2SRouter, error) {
 	r := &c2sRouter{
-		userSt:       userSt,
-		blockListSt:  blockListSt,
-		resourcesSt:  resourcesSt,
-		allocationSt: allocationSt,
-		cluster:      cluster,
-		localRouter:  newLocalRouter(),
-		closeCh:      make(chan chan struct{}, 1),
+		cluster:     cluster,
+		userSt:      userSt,
+		blockListSt: blockListSt,
+		resourcesSt: resourcesSt,
+		localRouter: newLocalRouter(),
 	}
 	if cluster != nil {
 		clusterRouter, err := newClusterRouter(cluster.MemberList)
@@ -57,14 +51,6 @@ func New(
 
 		// register local router as cluster stanza handler
 		cluster.RegisterStanzaHandler(r.localRouter.route)
-
-		if err := r.cluster.Elect(); err != nil {
-			return nil, err
-		}
-		if err := r.cluster.Join(); err != nil {
-			return nil, err
-		}
-		go r.loop()
 	}
 	return r, nil
 }
@@ -227,56 +213,4 @@ func (r *c2sRouter) isBlockedJID(ctx context.Context, j *jid.JID, username strin
 		}
 	}
 	return false
-}
-
-func (r *c2sRouter) shutdown(ctx context.Context) error {
-	ch := make(chan struct{})
-	r.closeCh <- ch
-	select {
-	case <-ch:
-		return nil
-	case <-ctx.Done():
-		return ctx.Err()
-	}
-}
-
-func (r *c2sRouter) loop() {
-	tc := time.NewTicker(houseKeepingInterval)
-	defer tc.Stop()
-
-	for {
-		select {
-		case <-tc.C:
-			if err := r.houseKeeping(); err != nil {
-				log.Warnf("housekeeping task error: %v", err)
-			}
-		case ch := <-r.closeCh:
-			close(ch)
-			return
-		}
-	}
-}
-
-func (r *c2sRouter) houseKeeping() error {
-	if !r.cluster.IsLeader() {
-		return nil
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), (houseKeepingInterval*5)/10)
-	defer cancel()
-
-	allocations, err := r.allocationSt.FetchAllocations(ctx)
-	if err != nil {
-		return err
-	}
-	members := r.cluster.Members()
-	for _, alloc := range allocations {
-		if m := members.Member(alloc.ID); m != nil {
-			continue
-		}
-		// unregister inactive allocations
-		if err := r.allocationSt.UnregisterAllocation(ctx, alloc.ID); err != nil {
-			return err
-		}
-	}
-	return nil
 }

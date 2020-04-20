@@ -25,9 +25,9 @@ func newAllocation(db *sql.DB) *Allocation {
 
 func (s *Allocation) RegisterAllocation(ctx context.Context, allocation *model.Allocation) error {
 	_, err := sq.Insert("allocations").
-		Columns("allocation_id", "created_at").
+		Columns("allocation_id", "updated_at", "created_at").
 		Suffix("ON DUPLICATE KEY UPDATE updated_at = NOW()").
-		Values(allocation.ID, nowExpr).
+		Values(allocation.ID, nowExpr, nowExpr).
 		RunWith(s.db).ExecContext(ctx)
 	return err
 }

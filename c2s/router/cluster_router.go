@@ -13,7 +13,6 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
-	"time"
 
 	"github.com/ortuman/jackal/cluster"
 	"github.com/ortuman/jackal/log"
@@ -23,8 +22,6 @@ import (
 	"github.com/sony/gobreaker"
 	"golang.org/x/net/http2"
 )
-
-const houseKeepingInterval = time.Second * 3
 
 type clusterRouter struct {
 	hClient    *http.Client

@@ -21,6 +21,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/ortuman/jackal/model"
+
 	"github.com/google/uuid"
 	"github.com/ortuman/jackal/c2s"
 	c2srouter "github.com/ortuman/jackal/c2s/router"
@@ -144,12 +146,6 @@ func (a *Application) Run() error {
 		return err
 	}
 
-	// set allocation identifier
-	a.allocID = os.Getenv(envAllocationID)
-	if len(a.allocID) == 0 {
-		a.allocID = uuid.New().String()
-	}
-
 	// show jackal's fancy logo
 	a.printLogo()
 
@@ -158,6 +154,11 @@ func (a *Application) Run() error {
 	if err != nil {
 		return err
 	}
+	// register allocation
+	if err := a.registerAllocation(); err != nil {
+		return err
+	}
+
 	// initialize cluster
 	if cfg.Cluster != nil {
 		a.cluster, err = cluster.New(cfg.Cluster, a.allocID)
@@ -177,7 +178,7 @@ func (a *Application) Run() error {
 		a.s2sOutProvider = s2s.NewOutProvider(cfg.S2S, hosts)
 		s2sRouter = s2srouter.New(a.s2sOutProvider)
 	}
-	c2sRouter, err := c2srouter.New(a.storage.User, a.storage.Resources, a.storage.BlockList, a.storage.Allocation, a.cluster)
+	c2sRouter, err := c2srouter.New(a.storage.User, a.storage.Resources, a.storage.BlockList, a.cluster)
 	if err != nil {
 		return err
 	}
@@ -203,11 +204,13 @@ func (a *Application) Run() error {
 		a.s2s.Start()
 	}
 	// start serving c2s...
-	a.c2s, err = c2s.New(cfg.C2S, a.mods, a.comps, a.router, a.storage.User, a.storage.BlockList)
+	a.c2s, err = c2s.New(cfg.C2S, a.mods, a.comps, a.router, a.storage.User, a.storage.BlockList, a.storage.Allocation, a.cluster)
 	if err != nil {
 		return err
 	}
-	a.c2s.Start()
+	if err := a.c2s.Start(); err != nil {
+		return err
+	}
 
 	// initialize debug server...
 	if cfg.Debug.Port > 0 {
@@ -274,7 +277,7 @@ func (a *Application) printLogo() {
 		log.Infof("%s", logoStr[i])
 	}
 	log.Infof("")
-	log.Infof("jackal %v - allocation_id: %s\n", version.ApplicationVersion, a.allocID)
+	log.Infof("jackal %v\n", version.ApplicationVersion)
 }
 
 func (a *Application) setRLimit() error {
@@ -294,6 +297,29 @@ func (a *Application) setRLimit() error {
 		}
 		return syscall.Setrlimit(syscall.RLIMIT_NOFILE, &rLim)
 	}
+	return nil
+}
+
+func (a *Application) registerAllocation() error {
+	a.allocID = os.Getenv(envAllocationID)
+	if len(a.allocID) == 0 {
+		a.allocID = uuid.New().String()
+	}
+	var alloc = model.Allocation{ID: a.allocID}
+	if err := a.storage.Allocation.RegisterAllocation(context.Background(), &alloc); err != nil {
+		return err
+	}
+	log.Infof("allocation registered: %s", a.allocID)
+
+	return nil
+}
+
+func (a *Application) unregisterAllocation() error {
+	if err := a.storage.UnregisterAllocation(context.Background(), a.allocID); err != nil {
+		return err
+	}
+	log.Infof("allocation unregistered: %s", a.allocID)
+
 	return nil
 }
 
@@ -362,10 +388,11 @@ func (a *Application) doShutdown(ctx context.Context) error {
 	if err := a.mods.Shutdown(ctx); err != nil {
 		return err
 	}
-	// shutdown cluster
-	if err := a.storage.UnregisterAllocation(ctx, a.allocID); err != nil {
+	// unregister allocation
+	if err := a.unregisterAllocation(); err != nil {
 		return err
 	}
+	// shutdown cluster
 	if a.cluster != nil {
 		if err := a.cluster.Shutdown(ctx); err != nil {
 			return err

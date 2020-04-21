@@ -196,6 +196,7 @@ func (s *inStream) Disconnect(ctx context.Context, err error) {
 		return
 	}
 	waitCh := make(chan struct{})
+
 	s.runQueue.Run(func() {
 		s.disconnect(ctx, err)
 		close(waitCh)
@@ -795,7 +796,7 @@ func (s *inStream) disconnectWithStreamError(ctx context.Context, err *streamerr
 	s.disconnectClosingSession(ctx, true, unregister)
 }
 
-func (s *inStream) disconnectClosingSession(ctx context.Context, closeSession, unbind bool) {
+func (s *inStream) disconnectClosingSession(ctx context.Context, closeSession, unregister bool) {
 	// stop pinging...
 	if p := s.mods.Ping; p != nil {
 		p.CancelPing(s)
@@ -809,14 +810,10 @@ func (s *inStream) disconnectClosingSession(ctx context.Context, closeSession, u
 	if closeSession {
 		_ = s.sess.Close(ctx)
 	}
-	// unregister stream
-	if unbind {
-		s.router.Unbind(ctx, s.JID())
-	}
 	s.ctxCancelFn()
 
 	// notify disconnection
-	if s.cfg.onDisconnect != nil {
+	if unregister && s.cfg.onDisconnect != nil {
 		s.cfg.onDisconnect(s)
 	}
 	s.setState(disconnected)

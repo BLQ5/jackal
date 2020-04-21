@@ -155,6 +155,8 @@ func (s *server) nextID() string {
 
 func (s *server) closeConnections(ctx context.Context) (count int, err error) {
 	s.inConnectionsMu.Lock()
+	defer s.inConnectionsMu.Unlock()
+
 	for _, stm := range s.inConnections {
 		select {
 		case <-closeConn(ctx, stm):
@@ -163,7 +165,6 @@ func (s *server) closeConnections(ctx context.Context) (count int, err error) {
 			return 0, ctx.Err()
 		}
 	}
-	s.inConnectionsMu.Unlock()
 	return count, nil
 }
 

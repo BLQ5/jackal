@@ -41,6 +41,8 @@ func New(config *Config, allocationID string) (*Cluster, error) {
 	var kv KV
 	var err error
 
+	fmt.Printf("DOING...")
+
 	switch config.Type {
 	case Etcd:
 		leader, kv, err = initEtcd(config.Etcd)
@@ -54,6 +56,8 @@ func New(config *Config, allocationID string) (*Cluster, error) {
 	if err != nil {
 		return nil, err
 	}
+	fmt.Printf("GOT LOCAL IP: %s...", localIP)
+
 	localMember := Member{
 		AllocationID: allocationID,
 		Host:         localIP,
@@ -68,6 +72,8 @@ func New(config *Config, allocationID string) (*Cluster, error) {
 	log.Infof("listening at :%d", config.Port)
 
 	go cl.serve()
+
+	fmt.Printf("DONE!")
 
 	return cl, nil
 }

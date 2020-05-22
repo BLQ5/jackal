@@ -160,11 +160,9 @@ func (a *Application) Run() error {
 	}
 
 	// initialize cluster
-	if cfg.Cluster != nil {
-		a.cluster, err = cluster.New(cfg.Cluster, a.allocID)
-		if err != nil {
-			return err
-		}
+	a.cluster, err = cluster.New(&cfg.Cluster, a.allocID)
+	if err != nil {
+		return err
 	}
 
 	// initialize hosts

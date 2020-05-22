@@ -41,7 +41,7 @@ func New(config *Config, allocationID string) (*Cluster, error) {
 	var kv KV
 	var err error
 
-	fmt.Printf("DOING...")
+	fmt.Printf("DOING...\n")
 
 	switch config.Type {
 	case Etcd:
@@ -52,6 +52,8 @@ func New(config *Config, allocationID string) (*Cluster, error) {
 	default:
 		return nil, fmt.Errorf("cluster: unrecognized cluster type: %d", config.Type)
 	}
+	fmt.Printf("FETCHING LOCAL IP...\n")
+
 	localIP, err := getLocalIP()
 	if err != nil {
 		return nil, err

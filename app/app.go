@@ -136,6 +136,13 @@ func (a *Application) Run() error {
 		return err
 	}
 
+	// spin up debug server...
+	if cfg.Debug.Port > 0 {
+		if err := a.initDebugServer(cfg.Debug.Port); err != nil {
+			return err
+		}
+	}
+
 	// create PID file
 	if err := a.createPIDFile(cfg.PIDFile); err != nil {
 		return err
@@ -229,13 +236,6 @@ func (a *Application) Run() error {
 	}
 	if err := a.c2s.Start(); err != nil {
 		return err
-	}
-
-	// initialize debug server...
-	if cfg.Debug.Port > 0 {
-		if err := a.initDebugServer(cfg.Debug.Port); err != nil {
-			return err
-		}
 	}
 
 	// ...wait for stop signal to shutdown

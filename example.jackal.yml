@@ -99,8 +99,8 @@ c2s:
 #      bind_addr: 0.0.0.0
 #      port: 5269
 
-# cluster:
-#   type: etcd
-#   etcd:
-#     endpoints:
-#       - http://127.0.0.1:2379
+cluster:
+  type: etcd
+  etcd:
+    endpoints:
+      - http://127.0.0.1:2379

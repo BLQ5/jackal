@@ -7,6 +7,7 @@ package etcd
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"sync/atomic"
 	"time"
@@ -27,12 +28,15 @@ type Leader struct {
 
 func newLeader(cli *v3.Client) (*Leader, error) {
 	c := &Leader{}
+	fmt.Printf("LEADER SESSION?...\n")
 	ss, err := concurrency.NewSession(cli)
 	if err != nil {
 		return nil, err
 	}
 	c.ss = ss
+	fmt.Printf("ELECTION...\n")
 	c.election = concurrency.NewElection(c.ss, "/jackal-leader/")
+	fmt.Printf("ELECTION...COMPLETED!\n")
 	return c, nil
 }
 

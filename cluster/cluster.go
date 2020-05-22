@@ -34,6 +34,9 @@ type Cluster struct {
 
 // New returns a new cluster subsystem instance.
 func New(config *Config, allocationID string) (*Cluster, error) {
+	if config == nil {
+		return nil, fmt.Errorf("cluster: missing cluster configuration")
+	}
 	var leader Leader
 	var kv KV
 	var err error

@@ -160,7 +160,7 @@ func (a *Application) Run() error {
 	}
 
 	// initialize cluster
-	a.cluster, err = cluster.New(&cfg.Cluster, a.allocID)
+	a.cluster, err = cluster.New(cfg.Cluster, a.allocID)
 	if err != nil {
 		return err
 	}

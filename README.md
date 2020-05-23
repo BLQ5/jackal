@@ -144,7 +144,7 @@ cluster:
       - http://127.0.0.1:2379
 ```
 
-`jackal` current implementation uses `etcd` as backing store for all cluster data.
+`jackal` current implementation uses `etcd` as backing store for all cluster data. 
 
 To allow cluster info exchange all instances must have the ability to connect to port `14369` of all other nodes.
 
